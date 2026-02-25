@@ -1,146 +1,201 @@
-# Hakuhodo_ChatGPT Multimodal Behavior and Text Analysis Pipeline
+# Hakuhodo_ChatGPT
+
+Personalized TV Program View Prediction
+Behavior Data × Interest Vector × CM Content Matching
+
+---
 
 ## Overview
 
-This notebook implements an experimental pipeline that integrates:
+This project predicts whether a user will watch a specific TV program by combining:
 
-* Speech recognition from video
-* Japanese text processing
-* Step counter (pedometer) data
-* Weather and time features
-* Machine learning prediction
-* Text similarity analysis
+* Physical state estimation (At-home prediction)
+* Personal interest modeling (Google search history)
+* CM content semantic similarity
 
-The purpose of this project is to examine how **spoken content, written ideas, environmental context, and human activity (step counts)** can be transformed into structured data and combined into a single analytical workflow.
+Instead of relying on aggregate ratings, this system operates at the individual level.
 
----
+The core idea:
 
-## Input Data
-
-The system uses three main inputs:
-
-1. **Text file**
-   A user-provided text file representing an idea or topic of interest.
-
-2. **Video file (MP4)**
-   A video containing spoken Japanese, used as the source for speech transcription.
-
-3. **CSV dataset**
-   A dataset containing:
-
-   * month
-   * hour
-   * rain
-   * maxTemp
-   * steps (pedometer data)
-
-The step counter data represents human walking activity and is used as the prediction target for the machine learning model.
+```
+Watch Probability = f(At-Home Probability, Interest Match Score)
+```
 
 ---
 
-## Processing Flow
+## Data Sources
 
-### 1. Text Preprocessing
+### 1. Smartphone Step Counter Data
 
-The uploaded text file is processed using Janome for Japanese morphological analysis.
-The text is tokenized into word units and rewritten with whitespace to allow vectorization and similarity comparison.
+Source: Personal smartphone pedometer logs
+
+Purpose:
+Used to determine whether the user is at home.
+
+Definition:
+
+```
+steps == 0 → at home
+```
+
+Features:
+
+* date
+* hour
+* steps
 
 ---
 
-### 2. Speech Transcription
+### 2. Japan Meteorological Agency Weather Data
 
-Audio is extracted from the uploaded MP4 file and transcribed using OpenAI Whisper.
-The transcription is optionally refined using GPT and stored as text.
-This text is also tokenized using Janome for further analysis.
+Source: Official historical weather datasets
 
----
-
-### 3. Machine Learning Model
-
-A RandomForestClassifier is trained using the following features:
+Features:
 
 * month
 * hour
 * rain
 * maxTemp
 
-The target variable is:
-
-* steps (pedometer data)
-
-The model learns the relationship between **time and weather conditions** and **walking behavior**.
-
-Model performance is evaluated using:
-
-* Accuracy score
-* Classification report
-
-GPT is used to generate a short natural-language interpretation of the model’s performance.
+Merged with step data to improve at-home prediction accuracy.
 
 ---
 
-### 4. Behavioral Prediction
+### 3. Google Search History (~100,000 entries)
 
-Using the trained model and the hour extracted from speech transcription, the system predicts step-related behavior and infers whether the user is likely to be at home or active.
+Source: Personal Google search archive export
 
----
+Used to construct a high-dimensional interest vector.
 
-### 5. Text Similarity Analysis
+Process:
 
-To compare:
+* Text normalization
+* Tokenization
+* TF-IDF vectorization
 
-* the original idea text
-* the transcribed spoken text
-
-TF-IDF vectors are computed and cosine similarity is calculated.
-This produces a similarity score representing how closely the spoken content matches the intended idea.
-
----
-
-## Outputs
-
-The notebook produces:
-
-* Predicted walking behavior (based on step count data)
-* At-home status (derived from prediction)
-* Model accuracy
-* Classification report summary
-* Speech transcription
-* Tokenized Japanese text
-* Similarity score between idea text and spoken content
+Output:
+Personal Interest Embedding
 
 ---
 
-## Technologies Used
+### 4. TV Program CM (Video Input)
 
-* OpenAI Whisper (speech recognition)
-* OpenAI GPT (text interpretation)
-* Janome (Japanese morphological analysis)
-* scikit-learn (Random Forest, TF-IDF, cosine similarity)
-* pandas, NumPy
-* Google Colab
+Input: CM video (mp4)
 
----
+Pipeline:
 
-## Concept
+1. Whisper → speech-to-text
+2. GPT → cleanup / extraction
+3. Tokenization
+4. TF-IDF vectorization
 
-This project explores whether **language and physical activity** can be modeled together by combining:
-
-* what is written
-* what is spoken
-* what the weather is
-* how much the user walks
-
-The pipeline treats human behavior as a multimodal signal composed of language, time, environment, and movement.
+Output:
+CM Content Embedding
 
 ---
 
-## Intended Use
+## System Architecture
 
-This notebook is designed for experimental and educational purposes, including:
+### Step 1 — At-Home Prediction
 
-* Speech-based text analysis
-* Japanese NLP experiments
-* Activity prediction using step counter data
-* Comparing spoken narratives with written ideas
-* Demonstrating hybrid NLP and machine learning workflows
+Model:
+
+```
+RandomForestClassifier
+```
+
+Input:
+
+* month
+* hour
+* rain
+* maxTemp
+
+Output:
+
+```
+P(at_home)
+```
+
+Accuracy:
+~0.72
+
+---
+
+### Step 2 — Interest Matching
+
+Compute cosine similarity between:
+
+```
+Personal Interest Vector
+CM Content Vector
+```
+
+Output:
+
+```
+Interest Match Score
+```
+
+---
+
+### Step 3 — Watch Prediction
+
+Final features:
+
+* At-home probability
+* Interest similarity score
+* Contextual variables (time, weather)
+
+Output:
+
+```
+Watch / Not Watch
+```
+
+This integrates physical state and psychological preference into a single predictive model.
+
+---
+
+## Tech Stack
+
+* Python
+* pandas
+* scikit-learn
+* Janome
+* OpenAI Whisper
+* OpenAI GPT API
+* TF-IDF
+* Cosine Similarity
+
+---
+
+## Why This Is Different
+
+Traditional TV analytics:
+
+* Demographic-based
+* Aggregate-based
+
+This system:
+
+* Individual-level
+* Behavior-driven
+* Semantic content aware
+
+It connects:
+Real-world behavior
+Personal intent
+Media content
+
+Into one prediction pipeline.
+
+---
+
+## Potential Extensions
+
+* Real-time smart TV integration
+* Streaming platform adaptation
+* Dynamic ad targeting
+* LLM-based interest modeling
+* Deep learning embedding replacement (BERT / Sentence Transformers)
